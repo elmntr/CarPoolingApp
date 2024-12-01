@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "102168634833",
+    "project_id": "real-taxi-c1cea",
+    "storage_bucket": "real-taxi-c1cea.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:102168634833:android:335a65928d5c6f40ff2cf0",
+        "android_client_info": {
+          "package_name": "com.example.realtaxi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDp6MqdIzuS0ovUh9ish9qwCZVdQGtqAeE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
