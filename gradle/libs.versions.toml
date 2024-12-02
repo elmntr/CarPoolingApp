@@ -4,6 +4,7 @@ firebaseAuth = "23.1.0"
 firebaseBom = "33.6.0"
 firebaseCore = "21.1.1"
 firebaseFirestore = "25.1.1"
+
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"

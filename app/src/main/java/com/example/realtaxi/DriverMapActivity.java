@@ -12,6 +12,8 @@ import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.view.View;
+import android.widget.Button;
 
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
@@ -22,7 +24,9 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.GeoPoint;
 import com.example.realtaxi.databinding.ActivityDriverMapBinding;
 
 public class DriverMapActivity extends FragmentActivity implements
@@ -31,6 +35,7 @@ public class DriverMapActivity extends FragmentActivity implements
         GoogleApiClient.OnConnectionFailedListener,
         com.google.android.gms.location.LocationListener {
 
+    private Button mLogout;
     private GoogleMap mMap;
     private ActivityDriverMapBinding binding;
     private GoogleApiClient mGoogleApiClient;
@@ -49,17 +54,28 @@ public class DriverMapActivity extends FragmentActivity implements
             ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_REQUEST_CODE);
         }
 
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        mLogout = (Button) findViewById(R.id.btnLogout);
+        mLogout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                FirebaseAuth.getInstance().signOut();
+                Intent intent = new Intent(DriverMapActivity.this, MainActivity.class);
+                startActivity(intent);
+                finish();
+                return;
+            }
+        });
     }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
         buildGoogleApiClient();
@@ -78,9 +94,28 @@ public class DriverMapActivity extends FragmentActivity implements
     @Override
     public void onLocationChanged(Location location) {
         mLastLocation = location;
+
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+
         mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-        mMap.animateCamera(CameraUpdateFactory.zoomTo(11));
+        mMap.animateCamera(CameraUpdateFactory.zoomTo(18));
+
+        saveLocationToFirestore(location);
+    }
+
+    private void saveLocationToFirestore(Location location) {
+        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("driversAvailable")
+                .document(userId)
+                .set(new DriverLocation(new GeoPoint(location.getLatitude(), location.getLongitude())))
+                .addOnSuccessListener(aVoid -> {
+                    // Location successfully saved
+                })
+                .addOnFailureListener(e -> {
+                    // Handle the error
+                });
     }
 
     @Override
@@ -90,8 +125,8 @@ public class DriverMapActivity extends FragmentActivity implements
         mLocationRequest.setFastestInterval(1000);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
         LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
@@ -151,6 +186,40 @@ public class DriverMapActivity extends FragmentActivity implements
         super.onStop();
         if (mGoogleApiClient != null) {
             mGoogleApiClient.disconnect();
+        }
+        removeDriverFromFirestore();
+    }
+
+    private void removeDriverFromFirestore() {
+        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        db.collection("driversAvailable")
+                .document(userId)
+                .delete()
+                .addOnSuccessListener(aVoid -> {
+                    // Driver successfully removed
+                })
+                .addOnFailureListener(e -> {
+                    // Handle the error
+                });
+    }
+
+    public static class DriverLocation {
+        private GeoPoint location;
+
+        public DriverLocation() {}  // Required for Firestore
+
+        public DriverLocation(GeoPoint location) {
+            this.location = location;
+        }
+
+        public GeoPoint getLocation() {
+            return location;
+        }
+
+        public void setLocation(GeoPoint location) {
+            this.location = location;
         }
     }
 }

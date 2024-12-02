@@ -37,12 +37,15 @@ android {
 }
 
 dependencies {
+
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.bom)
     implementation (libs.firebase.core)
     implementation (libs.firebase.firestore)
     implementation (libs.firebase.auth)
     implementation (libs.play.services.location)
+    implementation ("com.google.firebase:firebase-database:21.0.0")
+    implementation ("com.firebase:geofire-android:2.1.1")
 
 
     implementation(libs.appcompat)
