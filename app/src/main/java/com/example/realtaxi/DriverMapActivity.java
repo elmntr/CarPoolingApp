@@ -12,7 +12,6 @@ import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.view.View;
 import android.widget.Button;
 
 import com.google.android.gms.location.LocationRequest;
@@ -35,11 +34,11 @@ public class DriverMapActivity extends FragmentActivity implements
         GoogleApiClient.OnConnectionFailedListener,
         com.google.android.gms.location.LocationListener {
 
-    private Button mLogout;
     private GoogleMap mMap;
     private ActivityDriverMapBinding binding;
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
+    private Button mLogout;
     private LocationRequest mLocationRequest;
     private static final int LOCATION_REQUEST_CODE = 99;
 
@@ -50,6 +49,8 @@ public class DriverMapActivity extends FragmentActivity implements
         binding = ActivityDriverMapBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        mLogout = findViewById(R.id.btnLogout);
+
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_REQUEST_CODE);
         }
@@ -57,16 +58,10 @@ public class DriverMapActivity extends FragmentActivity implements
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        mLogout = (Button) findViewById(R.id.btnLogout);
-        mLogout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                FirebaseAuth.getInstance().signOut();
-                Intent intent = new Intent(DriverMapActivity.this, MainActivity.class);
-                startActivity(intent);
-                finish();
-                return;
-            }
+        mLogout.setOnClickListener(view -> {
+            FirebaseAuth.getInstance().signOut();
+            startActivity(new Intent(DriverMapActivity.this, MainActivity.class));
+            finish();
         });
     }
 

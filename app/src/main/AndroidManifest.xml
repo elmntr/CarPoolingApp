@@ -16,8 +16,10 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.RealTaxi"
         tools:targetApi="31">
+        <activity
+            android:name=".CustomerMapActivity"
+            android:exported="false" />
 
-        
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyCnUIrc9q5ZIp8gitVMLmsXp4zDSRwvyw8" />
