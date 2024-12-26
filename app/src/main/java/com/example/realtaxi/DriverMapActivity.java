@@ -1,32 +1,32 @@
 package com.example.realtaxi;
 
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.os.Bundle;
+import android.provider.Settings;
+import android.widget.Button;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.FragmentActivity;
 
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.location.Location;
-import android.net.Uri;
-import android.os.Bundle;
-import android.provider.Settings;
-import android.widget.Button;
-
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
+import com.example.realtaxi.databinding.ActivityDriverMapBinding;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.GeoPoint;
-import com.example.realtaxi.databinding.ActivityDriverMapBinding;
 
 public class DriverMapActivity extends FragmentActivity implements
         OnMapReadyCallback,
@@ -38,9 +38,10 @@ public class DriverMapActivity extends FragmentActivity implements
     private ActivityDriverMapBinding binding;
     private GoogleApiClient mGoogleApiClient;
     private Location mLastLocation;
-    private Button mLogout;
     private LocationRequest mLocationRequest;
+    private Button mLogout;
     private static final int LOCATION_REQUEST_CODE = 99;
+    private FirebaseFirestore db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +50,7 @@ public class DriverMapActivity extends FragmentActivity implements
         binding = ActivityDriverMapBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        db = FirebaseFirestore.getInstance();
         mLogout = findViewById(R.id.btnLogout);
 
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
@@ -63,18 +65,45 @@ public class DriverMapActivity extends FragmentActivity implements
             startActivity(new Intent(DriverMapActivity.this, MainActivity.class));
             finish();
         });
+
+        listenForCustomerRequests();
+    }
+
+    private void listenForCustomerRequests() {
+        String driverId = FirebaseAuth.getInstance().getUid();
+
+        if (driverId == null) {
+            return;
+        }
+
+        db.collection("driversworking")
+                .document(driverId)
+                .addSnapshotListener((snapshot, e) -> {
+                    if (e != null || snapshot == null || !snapshot.exists()) {
+                        return;
+                    }
+
+                    // Extract customer information
+                    GeoPoint customerLocation = snapshot.getGeoPoint("pickupLocation");
+                    if (customerLocation != null) {
+                        LatLng customerLatLng = new LatLng(customerLocation.getLatitude(), customerLocation.getLongitude());
+
+                        // Mark customer's location on the driver's map
+                        mMap.addMarker(new MarkerOptions()
+                                .position(customerLatLng)
+                                .title("Customer Pickup Location"));
+                    }
+                });
     }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            buildGoogleApiClient();
+            mMap.setMyLocationEnabled(true);
         }
-        buildGoogleApiClient();
-        mMap.setMyLocationEnabled(true);
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -100,11 +129,17 @@ public class DriverMapActivity extends FragmentActivity implements
 
     private void saveLocationToFirestore(Location location) {
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        if (userId == null) {
+            return;
+        }
+
+        GeoPoint geoPoint = new GeoPoint(location.getLatitude(), location.getLongitude());
+        DriverLocation driverLocation = new DriverLocation(geoPoint);
 
         db.collection("driversAvailable")
                 .document(userId)
-                .set(new DriverLocation(new GeoPoint(location.getLatitude(), location.getLongitude())))
+                .set(driverLocation)
                 .addOnSuccessListener(aVoid -> {
                     // Location successfully saved
                 })
@@ -120,52 +155,17 @@ public class DriverMapActivity extends FragmentActivity implements
         mLocationRequest.setFastestInterval(1000);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
         }
-        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
     }
 
     @Override
     public void onConnectionSuspended(int i) {
-        // Called when connection is suspended
     }
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-        // Called when connection fails
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == LOCATION_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                if (mMap != null) {
-                    if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                        mMap.setMyLocationEnabled(true);
-                        buildGoogleApiClient();
-                    }
-                }
-            } else {
-                showPermissionDeniedDialog();
-            }
-        }
-    }
-
-    private void showPermissionDeniedDialog() {
-        new AlertDialog.Builder(this)
-                .setTitle("Permission Required")
-                .setMessage("Location permission is required for this app to work properly")
-                .setPositiveButton("OK", (dialog, which) -> {
-                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                    Uri uri = Uri.fromParts("package", getPackageName(), null);
-                    intent.setData(uri);
-                    startActivity(intent);
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
     }
 
     @Override
@@ -187,7 +187,10 @@ public class DriverMapActivity extends FragmentActivity implements
 
     private void removeDriverFromFirestore() {
         String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        if (userId == null) {
+            return;
+        }
 
         db.collection("driversAvailable")
                 .document(userId)
@@ -203,7 +206,8 @@ public class DriverMapActivity extends FragmentActivity implements
     public static class DriverLocation {
         private GeoPoint location;
 
-        public DriverLocation() {}  // Required for Firestore
+        public DriverLocation() {
+        }
 
         public DriverLocation(GeoPoint location) {
             this.location = location;
