@@ -46,6 +46,8 @@ dependencies {
     implementation (libs.play.services.location)
     implementation ("com.google.firebase:firebase-database:21.0.0")
     implementation ("com.firebase:geofire-android:2.1.1")
+    implementation ("com.squareup.okhttp3:okhttp:4.9.1")
+    implementation ("com.google.code.gson:gson:2.8.8")
 
 
 

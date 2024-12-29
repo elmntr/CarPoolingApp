@@ -7,26 +7,44 @@
     android:layout_height="match_parent"
     tools:context=".CustomerMapActivity">
 
-
-
-
     <fragment
         android:id="@+id/map"
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- Logout Button -->
     <Button
         android:id="@+id/btnLogout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Logouts" />
+        android:layout_margin="16dp"
+        android:text="Logout"
+        android:layout_gravity="top|start" />
 
-    <Button
+    <!-- Destination Input and Request Button -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Call Real Taxi"
-        android:id="@+id/btnRequest"
-        android:layout_gravity="bottom"/>
+        android:orientation="vertical"
+        android:layout_gravity="bottom"
+        android:padding="16dp"
+        android:background="@android:color/white">
 
+        <EditText
+            android:id="@+id/editDestination"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter destination"
+            android:inputType="text"
+            android:padding="8dp"
+            android:background="@android:color/white" />
+
+        <Button
+            android:id="@+id/btnRequest"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Call Real Taxi"
+            android:layout_marginTop="8dp" />
+    </LinearLayout>
 </FrameLayout>

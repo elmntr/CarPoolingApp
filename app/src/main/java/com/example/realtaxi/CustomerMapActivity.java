@@ -2,9 +2,12 @@ package com.example.realtaxi;
 
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
 import android.widget.Button;
+import android.widget.EditText;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -21,13 +24,17 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.GeoPoint;
 
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class CustomerMapActivity extends FragmentActivity implements
@@ -41,8 +48,10 @@ public class CustomerMapActivity extends FragmentActivity implements
     private Location mLastLocation;
     private LocationRequest mLocationRequest;
     private GeoPoint pickupLocation;
+    private GeoPoint destination; // Add destination as a class-level member
 
     private Button mLogout, mRequest;
+    private EditText mDestination;
     private ActivityCustomerMapBinding binding;
 
     private FirebaseFirestore db;
@@ -60,6 +69,7 @@ public class CustomerMapActivity extends FragmentActivity implements
         db = FirebaseFirestore.getInstance();
         mLogout = findViewById(R.id.btnLogout);
         mRequest = findViewById(R.id.btnRequest);
+        mDestination = findViewById(R.id.editDestination);
 
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_REQUEST_CODE);
@@ -76,15 +86,94 @@ public class CustomerMapActivity extends FragmentActivity implements
 
         mRequest.setOnClickListener(view -> {
             if (mLastLocation != null) {
-                placeRequest();
-                searchForDriver();
+                String destinationAddress = mDestination.getText().toString().trim();
+                if (destinationAddress.isEmpty()) {
+                    mRequest.setText("Please enter a destination.");
+                    return;
+                }
+                geocodeDestination(destinationAddress);
             }
         });
     }
 
+    private Marker driverMarker;
+
+    private void listenForDriverLocation(String driverId) {
+        db.collection("driversworking")
+                .document(driverId)
+                .addSnapshotListener((snapshot, e) -> {
+                    if (e != null || snapshot == null || !snapshot.exists()) {
+                        return;
+                    }
+
+                    GeoPoint driverLocation = snapshot.getGeoPoint("driverLocation");
+                    if (driverLocation != null) {
+                        LatLng driverLatLng = new LatLng(driverLocation.getLatitude(), driverLocation.getLongitude());
+
+                        if (driverMarker == null) {
+                            driverMarker = mMap.addMarker(new MarkerOptions()
+                                    .position(driverLatLng)
+                                    .title("Driver"));
+                        } else {
+                            driverMarker.setPosition(driverLatLng);
+                        }
+                    }
+                });
+    }
+
+    private void geocodeDestination(String address) {
+        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+        try {
+            List<Address> addresses = geocoder.getFromLocationName(address, 1);
+            if (addresses == null || addresses.isEmpty()) {
+                mRequest.setText("Invalid destination. Please try again.");
+                return;
+            }
+
+            Address location = addresses.get(0);
+            destination = new GeoPoint(location.getLatitude(), location.getLongitude());
+
+            placeRequest(destination);
+            searchForDriver();
+        } catch (IOException e) {
+            mRequest.setText("Error finding destination: " + e.getMessage());
+        }
+    }
+
+    private void placeRequest(GeoPoint destinationGeoPoint) {
+        String customerId = FirebaseAuth.getInstance().getUid();
+
+        if (mLastLocation == null) {
+            mRequest.setText("Location unavailable.");
+            return;
+        }
+
+        pickupLocation = new GeoPoint(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+        mMap.addMarker(new MarkerOptions()
+                .position(new LatLng(pickupLocation.getLatitude(), pickupLocation.getLongitude()))
+                .title("Pickup Location"));
+
+        mMap.addMarker(new MarkerOptions()
+                .position(new LatLng(destinationGeoPoint.getLatitude(), destinationGeoPoint.getLongitude()))
+                .title("Destination"));
+
+        mRequest.setText("Searching for drivers...");
+
+        Map<String, Object> requestMap = new HashMap<>();
+        requestMap.put("customerId", customerId);
+        requestMap.put("pickupLocation", pickupLocation);
+        requestMap.put("destination", destinationGeoPoint);
+
+        db.collection("customerRequests")
+                .document(customerId)
+                .set(requestMap)
+                .addOnSuccessListener(aVoid -> mRequest.setText("Request placed successfully."))
+                .addOnFailureListener(e -> mRequest.setText("Failed to place request: " + e.getMessage()));
+    }
+
     private void searchForDriver() {
-        if (pickupLocation == null) {
-            mRequest.setText("Pickup location is missing.");
+        if (pickupLocation == null || destination == null) {
+            mRequest.setText("Pickup or destination location is missing.");
             return;
         }
 
@@ -94,7 +183,6 @@ public class CustomerMapActivity extends FragmentActivity implements
                     boolean driverFound = false;
 
                     for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
-                        // Get driver's location as GeoPoint
                         GeoPoint driverLocation = doc.get("location", GeoPoint.class);
 
                         if (driverLocation != null) {
@@ -103,14 +191,14 @@ public class CustomerMapActivity extends FragmentActivity implements
                             if (distance <= MAX_RADIUS) {
                                 driverFound = true;
 
-                                String driverId = doc.getId(); // Get driver document ID
+                                String driverId = doc.getId();
                                 LatLng driverLatLng = new LatLng(driverLocation.getLatitude(), driverLocation.getLongitude());
 
-                                // Add marker for the driver
-                                mMap.addMarker(new MarkerOptions().position(driverLatLng).title("Driver ID: " + driverId));
+                                mMap.addMarker(new MarkerOptions().position(driverLatLng).title("Driver"));
 
-                                // Move request to driversworking collection
-                                moveToDriversWorking(driverId, driverLocation);
+                                listenForDriverLocation(driverId);
+
+                                moveToDriversWorking(driverId, driverLocation, destination);
                                 mRequest.setText("Driver found: " + driverId);
                                 break;
                             }
@@ -124,8 +212,7 @@ public class CustomerMapActivity extends FragmentActivity implements
                 .addOnFailureListener(e -> mRequest.setText("Error finding drivers: " + e.getMessage()));
     }
 
-
-    private void moveToDriversWorking(String driverId, GeoPoint driverLocation) {
+    private void moveToDriversWorking(String driverId, GeoPoint driverLocation, GeoPoint destination) {
         String customerId = FirebaseAuth.getInstance().getUid();
 
         if (customerId == null || pickupLocation == null) {
@@ -137,6 +224,7 @@ public class CustomerMapActivity extends FragmentActivity implements
         workingRequest.put("driverLocation", driverLocation);
         workingRequest.put("customerId", customerId);
         workingRequest.put("pickupLocation", pickupLocation);
+        workingRequest.put("destination", destination);
 
         db.collection("driversworking")
                 .document(driverId)
@@ -147,32 +235,6 @@ public class CustomerMapActivity extends FragmentActivity implements
                             .delete();
                 })
                 .addOnFailureListener(e -> mRequest.setText("Failed to move to working: " + e.getMessage()));
-    }
-
-    private void placeRequest() {
-        String customerId = FirebaseAuth.getInstance().getUid();
-
-        if (mLastLocation == null) {
-            mRequest.setText("Location unavailable.");
-            return;
-        }
-
-        pickupLocation = new GeoPoint(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-        mMap.addMarker(new MarkerOptions()
-                .position(new LatLng(pickupLocation.getLatitude(), pickupLocation.getLongitude()))
-                .title("Pickup Location"));
-
-        mRequest.setText("Searching for drivers...");
-
-        Map<String, Object> requestMap = new HashMap<>();
-        requestMap.put("customerId", customerId);
-        requestMap.put("pickupLocation", pickupLocation);
-
-        db.collection("customerRequests")
-                .document(customerId)
-                .set(requestMap)
-                .addOnSuccessListener(aVoid -> mRequest.setText("Request placed successfully."))
-                .addOnFailureListener(e -> mRequest.setText("Failed to place request: " + e.getMessage()));
     }
 
     private double calculateDistance(GeoPoint point1, GeoPoint point2) {
