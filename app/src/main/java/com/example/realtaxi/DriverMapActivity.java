@@ -2,6 +2,7 @@ package com.example.realtaxi;
 
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.widget.Button;
@@ -22,6 +23,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
@@ -159,7 +161,7 @@ public class DriverMapActivity extends FragmentActivity implements
     }
 
     private void fetchRouteAndDraw(LatLng origin, LatLng destination) {
-        String apiKey = "YOUR_API_KEY"; // Replace with your Google API Key
+        String apiKey = "AIzaSyBdzePg0l1TrCXCaWh4qTmW9i_noOKryXg"; // Replace with your Google API Key
         String url = "https://maps.googleapis.com/maps/api/directions/json?origin=" +
                 origin.latitude + "," + origin.longitude +
                 "&destination=" + destination.latitude + "," + destination.longitude +
@@ -203,7 +205,15 @@ public class DriverMapActivity extends FragmentActivity implements
                             routeLine = mMap.addPolyline(new PolylineOptions()
                                     .addAll(points)
                                     .width(10)
-                                    .color(0xFF0000FF)); // Blue line
+                                    .color(Color.BLUE)); // Blue line
+
+                            // Adjust camera to fit route
+                            LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
+                            for (LatLng point : points) {
+                                boundsBuilder.include(point);
+                            }
+                            LatLngBounds routeBounds = boundsBuilder.build();
+                            mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(routeBounds, 100));
                         });
                     }
                 } catch (JSONException e) {
@@ -238,8 +248,8 @@ public class DriverMapActivity extends FragmentActivity implements
             int dlng = (result & 1) != 0 ? ~(result >> 1) : (result >> 1);
             lng += dlng;
 
-            LatLng p = new LatLng(((double) lat / 1E5), ((double) lng / 1E5));
-            poly.add(p);
+            LatLng point = new LatLng(((double) lat / 1E5), ((double) lng / 1E5));
+            poly.add(point);
         }
         return poly;
     }
@@ -405,4 +415,3 @@ public class DriverMapActivity extends FragmentActivity implements
         }
     }
 }
-
