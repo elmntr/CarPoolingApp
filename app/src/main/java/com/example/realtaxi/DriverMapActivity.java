@@ -161,11 +161,10 @@ public class DriverMapActivity extends FragmentActivity implements
     }
 
     private void fetchRouteAndDraw(LatLng origin, LatLng destination) {
-        String apiKey = "AIzaSyBdzePg0l1TrCXCaWh4qTmW9i_noOKryXg"; // Replace with your Google API Key
-        String url = "https://maps.googleapis.com/maps/api/directions/json?origin=" +
-                origin.latitude + "," + origin.longitude +
-                "&destination=" + destination.latitude + "," + destination.longitude +
-                "&key=" + apiKey;
+        String url = "https://api.mapbox.com/directions/v5/mapbox/driving/" +
+                origin.longitude + "," + origin.latitude + ";" +
+                destination.longitude + "," + destination.latitude +
+                "?geometries=polyline&access_token=sk.eyJ1IjoiZWxtbnRyeHh4IiwiYSI6ImNtNWI1Z3p0azUwMTcyaXA3OG8xMzFsOTkifQ.o21ekzUd3BZR2uS85IRZ2w";
 
         OkHttpClient client = new OkHttpClient();
 
@@ -193,8 +192,7 @@ public class DriverMapActivity extends FragmentActivity implements
 
                     if (routes.length() > 0) {
                         JSONObject route = routes.getJSONObject(0);
-                        JSONObject overviewPolyline = route.getJSONObject("overview_polyline");
-                        String encodedPolyline = overviewPolyline.getString("points");
+                        String encodedPolyline = route.getString("geometry");
 
                         List<LatLng> points = decodePolyline(encodedPolyline);
 
@@ -205,15 +203,7 @@ public class DriverMapActivity extends FragmentActivity implements
                             routeLine = mMap.addPolyline(new PolylineOptions()
                                     .addAll(points)
                                     .width(10)
-                                    .color(Color.BLUE)); // Blue line
-
-                            // Adjust camera to fit route
-                            LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
-                            for (LatLng point : points) {
-                                boundsBuilder.include(point);
-                            }
-                            LatLngBounds routeBounds = boundsBuilder.build();
-                            mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(routeBounds, 100));
+                                    .color(Color.BLUE)); // Adjust line width and color
                         });
                     }
                 } catch (JSONException e) {
@@ -222,6 +212,7 @@ public class DriverMapActivity extends FragmentActivity implements
             }
         });
     }
+
 
     private List<LatLng> decodePolyline(String encoded) {
         List<LatLng> poly = new ArrayList<>();
