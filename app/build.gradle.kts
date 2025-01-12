@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-        namespace = "com.example.realtaxi"
+    namespace = "com.example.realtaxi"
     compileSdk = 34
 
     defaultConfig {
@@ -37,19 +37,17 @@ android {
 }
 
 dependencies {
-
+    implementation("com.ramotion.paperonboarding:paper-onboarding:1.1.3")
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.bom)
-    implementation (libs.firebase.core)
-    implementation (libs.firebase.firestore)
-    implementation (libs.firebase.auth)
-    implementation (libs.play.services.location)
+    implementation(libs.firebase.core)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.auth)
+    implementation(libs.play.services.location)
     implementation ("com.google.firebase:firebase-database:21.0.0")
     implementation ("com.firebase:geofire-android:2.1.1")
     implementation ("com.squareup.okhttp3:okhttp:4.9.1")
     implementation ("com.google.code.gson:gson:2.8.8")
-
-
 
 
     implementation(libs.appcompat)
@@ -57,6 +55,7 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.constraintlayout)
     implementation(libs.play.services.maps)
+    implementation(libs.places)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

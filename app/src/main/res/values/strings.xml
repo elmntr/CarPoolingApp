@@ -1,5 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Real Taxi</string>
-    <string name="title_activity_driver_maps">DriverMapsActivity</string>
     <string name="title_activity_driver_map">DriverMapActivity</string>
+    <string name="app_name">RealTaxi</string>
+    <string name="welcome_message">Welcome to RealTaxi</string>
+    <string name="btn_get_started">Get Started</string>
+    <string name="onboarding_features">Your ride-sharing solution. Affordable, Reliable, and Easy to Use.</string>
+    <string name="developer_team">Meet the Team</string>
+    <string name="team_member_aldwin">Aldwin Santos - Lead Developer</string>
+    <string name="team_member_felix">Felix Andrei P. Marvilla - UI/UX Designer</string>
+    <string name="team_member_justin">Justin Puyong - Backend Specialist</string>
+    <string name="team_member_john">John Lawrence Amihan - Project Manager</string>
+    <string name="how_to_use">How to Use RealTaxi</string>
+    <string name="how_to_use_step1">1. Select your role: Driver or Customer.</string>
+    <string name="how_to_use_step2">2. Sign in or register for a new account.</string>
+    <string name="how_to_use_step3">3. Book or offer rides with ease!</string>
+    <string name="app_logo">Taxi App</string>
+
+
+    <string-array name="ride_preferences">
+        <item>Silent</item>
+        <item>Casual</item>
+        <item>Work</item>
+    </string-array>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string-array name="car_types">
+        <item>Sedan</item>
+        <item>SUV</item>
+        <item>Van</item>
+        <item>L300</item>
+    </string-array>
 </resources>

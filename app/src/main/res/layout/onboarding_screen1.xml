@@ -1,0 +1,38 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="16dp"
+    android:background="@drawable/gradient_background">
+
+    <ImageView
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:src="@drawable/taxilogo"
+        android:contentDescription="Taxi Logo"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Welcome to RealTaxi!"
+        android:fontFamily="@font/jersey15_regular"
+        android:textColor="@color/colorPrimary"
+        android:textSize="24sp"
+        android:background="@drawable/embossed_text_shadow"
+        android:padding="8dp"
+        android:gravity="center" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="This is a simple carpool app to connect drivers and riders for safe, and convenient travel."
+        android:fontFamily="@font/jersey15_regular"
+        android:textColor="@color/colorBackgroundDark"
+        android:textSize="16sp"
+        android:layout_marginTop="12dp"
+        android:gravity="center"
+        android:padding="8dp" />
+</LinearLayout>

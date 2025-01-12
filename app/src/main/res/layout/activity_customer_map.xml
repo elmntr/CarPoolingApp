@@ -7,6 +7,7 @@
     android:layout_height="match_parent"
     tools:context=".CustomerMapActivity">
 
+    <!-- Map Fragment -->
     <fragment
         android:id="@+id/map"
         android:name="com.google.android.gms.maps.SupportMapFragment"
@@ -14,22 +15,47 @@
         android:layout_height="match_parent" />
 
     <!-- Logout Button -->
+
+    <!-- Destination Input, Ride Preference, Request Button, and Cancel Button -->
     <Button
         android:id="@+id/btnLogout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
         android:layout_margin="16dp"
+        android:backgroundTint="@color/colorPrimary"
         android:text="Logout"
-        android:layout_gravity="top|start" />
+        android:textColor="@android:color/white" />
 
-    <!-- Destination Input and Request Button -->
+    <Button
+        android:id="@+id/btnMapInteract"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_marginTop="60dp"
+        android:layout_marginLeft="16dp"
+        android:backgroundTint="@color/colorPrimary"
+        android:text="Navigate"
+        android:textColor="@android:color/white" />
+
+    <Button
+        android:id="@+id/btnMapInteract2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_marginTop="103dp"
+        android:layout_marginLeft="16dp"
+        android:backgroundTint="@color/colorPrimary"
+        android:text="."
+        android:textColor="@android:color/white" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:layout_gravity="bottom"
         android:padding="16dp"
-        android:background="@android:color/white">
+        android:background="@drawable/gradient_background">
 
         <EditText
             android:id="@+id/editDestination"
@@ -40,11 +66,40 @@
             android:padding="8dp"
             android:background="@android:color/white" />
 
+        <Spinner
+            android:id="@+id/spinnerRidePreference"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:spinnerMode="dropdown"
+            android:background="@android:color/white" />
+
         <Button
             android:id="@+id/btnRequest"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="@color/colorPrimary"
             android:text="Call Real Taxi"
-            android:layout_marginTop="8dp" />
+            android:textColor="@android:color/white" />
+
+        <Button
+            android:id="@+id/btnRideDetails"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:backgroundTint="@color/colorPrimary"
+            android:text="Ride Details"
+            android:textColor="@android:color/white" />
+
+        <!-- Cancel Request Button -->
+        <Button
+            android:id="@+id/btnCancel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:backgroundTint="@color/colorPrimary"
+            android:text="Cancel Request"
+            android:textColor="@android:color/white"/>
     </LinearLayout>
 </FrameLayout>

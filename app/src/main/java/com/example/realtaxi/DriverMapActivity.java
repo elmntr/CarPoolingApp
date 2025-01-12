@@ -2,10 +2,16 @@ package com.example.realtaxi;
 
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
+import android.view.Gravity;
+import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.PopupWindow;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -22,8 +28,8 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
@@ -37,7 +43,9 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -57,12 +65,14 @@ public class DriverMapActivity extends FragmentActivity implements
     private Location mLastLocation;
     private LocationRequest mLocationRequest;
 
-    private Button mLogout, mPickup, mComplete;
+    private Button mLogout, mPickup, mComplete, mDecline, mRideDetails;
     private FirebaseFirestore db;
 
     private static final int LOCATION_REQUEST_CODE = 99;
     private static final float PICKUP_RADIUS = 50; // meters
     private static final float DESTINATION_RADIUS = 50; // meters
+    private static final double EARTH_RADIUS_KM = 6371.0;
+    private static final double FARE_RATE_PER_KM = 50.0; // Fare rate in PHP per kilometer
 
     private GeoPoint customerPickupLocation, customerDestinationLocation;
     private LatLng customerLatLng, destinationLatLng;
@@ -81,8 +91,11 @@ public class DriverMapActivity extends FragmentActivity implements
         mLogout = findViewById(R.id.btnLogout);
         mPickup = findViewById(R.id.btnPickup);
         mComplete = findViewById(R.id.btnComplete);
-
+        mDecline = findViewById(R.id.btnDecline); // Bind Decline Button
         mComplete.setEnabled(false); // Disabled until pickup is complete
+        mRideDetails = findViewById(R.id.btnRideDetails);
+
+        mRideDetails.setOnClickListener(view -> showRideDetails());
 
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_REQUEST_CODE);
@@ -92,13 +105,36 @@ public class DriverMapActivity extends FragmentActivity implements
         mapFragment.getMapAsync(this);
 
         mLogout.setOnClickListener(view -> {
-            FirebaseAuth.getInstance().signOut();
-            startActivity(new Intent(DriverMapActivity.this, MainActivity.class));
-            finish();
+            String driverId = FirebaseAuth.getInstance().getUid();
+
+            if (driverId != null) {
+                // Remove the driver's location from driversAvailable
+                db.collection("driversAvailable")
+                        .document(driverId)
+                        .delete()
+                        .addOnSuccessListener(aVoid -> {
+                            // Successfully removed location
+                            FirebaseAuth.getInstance().signOut();
+                            navigateToMain();
+                        })
+                        .addOnFailureListener(e -> {
+                            // Log out even if location removal fails
+                            Toast.makeText(this, "Error removing location: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            FirebaseAuth.getInstance().signOut();
+                            navigateToMain();
+                        });
+            } else {
+                // Log out directly if driverId is null
+                FirebaseAuth.getInstance().signOut();
+                navigateToMain();
+            }
         });
+
 
         mPickup.setOnClickListener(view -> {
             if (customerPickupLocation != null && isWithinRadius(customerPickupLocation, PICKUP_RADIUS)) {
+                mPickup.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#808080")));
+                mComplete.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#6200EE")));
                 markPickupComplete();
             } else {
                 Toast.makeText(this, "You are not close enough to the pickup location.", Toast.LENGTH_SHORT).show();
@@ -106,14 +142,111 @@ public class DriverMapActivity extends FragmentActivity implements
         });
 
         mComplete.setOnClickListener(view -> {
+
             if (customerDestinationLocation != null && isWithinRadius(customerDestinationLocation, DESTINATION_RADIUS)) {
+                mPickup.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#6200EE")));
+                mComplete.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#808080")));
                 completeRide();
             } else {
                 Toast.makeText(this, "You are not at the destination yet.", Toast.LENGTH_SHORT).show();
             }
         });
 
-        listenForCustomerRequests();
+        mDecline.setOnClickListener(view -> {
+            declineRide();
+        });
+        verifyDriverRoleAndInitialize();
+    }
+
+    // Show Ride Details Popup
+    private void showRideDetails() {
+        String driverId = FirebaseAuth.getInstance().getUid();
+
+        if (driverId == null) {
+            Toast.makeText(this, "Authentication error. Please log in again.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Fetch ride details from driversworking
+        db.collection("driversworking")
+                .document(driverId)
+                .get()
+                .addOnSuccessListener(rideDetails -> {
+                    if (!rideDetails.exists()) {
+                        Toast.makeText(this, "No ride details available.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+
+                    // Extract details
+                    String customerName = rideDetails.getString("CSName");
+                    String ridePreference = rideDetails.getString("ridePreference");
+                    Double distance = rideDetails.getDouble("distance");
+                    Double fare = rideDetails.getDouble("fare");
+
+                    // Show popup with the fetched details
+                    showRideDetailsPopup(customerName, ridePreference, distance, fare);
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to fetch ride details: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    // Show Ride Details Popup
+    private void showRideDetailsPopup(String customerName, String ridePreference, Double distance, Double fare) {
+        // Inflate popup layout
+        View popupView = getLayoutInflater().inflate(R.layout.drride_details_popup, null);
+
+        // Set details in the popup
+        ((TextView) popupView.findViewById(R.id.txtCustomerName)).setText("Customer: " + customerName);
+        ((TextView) popupView.findViewById(R.id.txtRidePref)).setText("Ride Preference: " + ridePreference);
+        ((TextView) popupView.findViewById(R.id.txtDistance)).setText("Distance: " + distance + " km");
+        ((TextView) popupView.findViewById(R.id.txtFare)).setText("Fare: PHP " + fare);
+
+        // Create PopupWindow
+        PopupWindow popupWindow = new PopupWindow(
+                popupView,
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                true
+        );
+
+        // Close button
+        Button btnClose = popupView.findViewById(R.id.btnClosePopup);
+        btnClose.setOnClickListener(v -> popupWindow.dismiss());
+
+        // Show popup
+        popupWindow.showAtLocation(binding.getRoot(), Gravity.CENTER, 0, 0);
+    }
+
+
+    private void verifyDriverRoleAndInitialize() {
+        String driverId = FirebaseAuth.getInstance().getUid();
+        if (driverId == null) {
+            Toast.makeText(this, "Authentication error. Please log in again.", Toast.LENGTH_SHORT).show();
+            navigateToMain();
+            return;
+        }
+
+        db.collection("users").document(driverId)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot.exists() && "driver".equals(snapshot.getString("role"))) {
+                        listenForCustomerRequests();
+                    } else {
+                        Toast.makeText(this, "Unauthorized access. Please log in with a driver account.", Toast.LENGTH_SHORT).show();
+                        FirebaseAuth.getInstance().signOut();
+                        navigateToMain();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Error verifying user role: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    navigateToMain();
+                });
+    }
+
+    private void navigateToMain() {
+        startActivity(new Intent(DriverMapActivity.this, LoginActivity.class));
+        finish();
     }
 
     private void listenForCustomerRequests() {
@@ -132,19 +265,25 @@ public class DriverMapActivity extends FragmentActivity implements
 
                     customerPickupLocation = snapshot.getGeoPoint("pickupLocation");
                     customerDestinationLocation = snapshot.getGeoPoint("destination");
+                    String ridePreference = snapshot.getString("ridePreference"); // Retrieve ride preference
 
                     if (customerPickupLocation != null) {
                         customerLatLng = new LatLng(customerPickupLocation.getLatitude(), customerPickupLocation.getLongitude());
                         mMap.addMarker(new MarkerOptions()
                                 .position(customerLatLng)
-                                .title("Customer Pickup Location"));
+                                .title("Customer Pickup Location").icon(BitmapDescriptorFactory.fromResource(R.mipmap.ic_customer_foreground)));
                     }
 
                     if (customerDestinationLocation != null) {
                         destinationLatLng = new LatLng(customerDestinationLocation.getLatitude(), customerDestinationLocation.getLongitude());
                         mMap.addMarker(new MarkerOptions()
                                 .position(destinationLatLng)
-                                .title("Customer Destination"));
+                                .title("Customer Destination").icon(BitmapDescriptorFactory.fromResource(R.mipmap.ic_destination_foreground)));
+                    }
+
+                    if (ridePreference != null) {
+                        // Display the ride preference to the driver
+
                     }
 
                     if (!isPickupComplete) {
@@ -152,6 +291,7 @@ public class DriverMapActivity extends FragmentActivity implements
                     }
                 });
     }
+
 
     private void drawRoute(LatLng targetLatLng) {
         if (targetLatLng != null && mLastLocation != null) {
@@ -213,7 +353,6 @@ public class DriverMapActivity extends FragmentActivity implements
         });
     }
 
-
     private List<LatLng> decodePolyline(String encoded) {
         List<LatLng> poly = new ArrayList<>();
         int index = 0, len = encoded.length();
@@ -258,6 +397,187 @@ public class DriverMapActivity extends FragmentActivity implements
         return results[0] <= radius;
     }
 
+    private void markPickupComplete() {
+        isPickupComplete = true;
+        mPickup.setEnabled(false);
+        mComplete.setEnabled(true);
+
+        drawRoute(destinationLatLng); // Draw route to destination
+        Toast.makeText(this, "Pickup complete. Driving to destination.", Toast.LENGTH_SHORT).show();
+
+        String driverId = FirebaseAuth.getInstance().getUid();
+        if (driverId != null && customerPickupLocation != null && customerDestinationLocation != null) {
+            // Calculate fare based on distance
+            double distance = calculateDistance(
+                    customerPickupLocation.getLatitude(), customerPickupLocation.getLongitude(),
+                    customerDestinationLocation.getLatitude(), customerDestinationLocation.getLongitude());
+            double fare = distance * FARE_RATE_PER_KM;
+
+            // Update Firestore with status and fare
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("distance",distance);
+            updates.put("status", "PICKED_UP");
+            updates.put("fare", fare); // Add fare to Firestore
+
+            db.collection("driversworking").document(driverId)
+                    .update(updates)
+                    .addOnSuccessListener(aVoid -> {
+                        Toast.makeText(this, "Ride fare calculated: " + fare + " PHP", Toast.LENGTH_SHORT).show();
+                    })
+                    .addOnFailureListener(e -> {
+                        Toast.makeText(this, "Failed to update fare: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    });
+        }
+    }
+
+    private void completeRide() {
+        String driverId = FirebaseAuth.getInstance().getUid();
+        if (driverId == null) {
+            return;
+        }
+
+        db.collection("driversworking").document(driverId)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot.exists()) {
+                        // Retrieve fare for final display
+                        Double fare = snapshot.getDouble("fare");
+
+                        // Complete ride in Firestore
+                        db.collection("driversworking").document(driverId)
+                                .update("status", "COMPLETED")
+                                .addOnSuccessListener(aVoid -> {
+                                    db.collection("driversworking").document(driverId).delete()
+                                            .addOnSuccessListener(aVoid2 -> {
+                                                if (routeLine != null) {
+                                                    routeLine.remove();
+                                                    routeLine = null;
+                                                }
+                                                Toast.makeText(this, "Ride completed. Fare: " + (fare != null ? fare : "N/A") + " PHP", Toast.LENGTH_SHORT).show();
+                                                resetDriverState();
+                                            })
+                                            .addOnFailureListener(e -> Toast.makeText(this, "Failed to clean up after ride: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                                })
+                                .addOnFailureListener(e -> Toast.makeText(this, "Failed to update ride completion: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                    } else {
+                        Toast.makeText(this, "Error: Ride data not found.", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .addOnFailureListener(e -> Toast.makeText(this, "Failed to retrieve ride data: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+    }
+
+
+    private void declineRide() {
+        String driverId = FirebaseAuth.getInstance().getUid();
+        if (driverId == null) {
+            Toast.makeText(this, "Error: Driver not authenticated.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        db.collection("driversworking").document(driverId)
+                .update("status", "DECLINED")
+                .addOnSuccessListener(aVoid -> {
+                    db.collection("driversworking").document(driverId).delete()
+                            .addOnSuccessListener(aVoid2 -> {
+                                // Remove route line
+                                if (routeLine != null) {
+                                    routeLine.remove();
+                                    routeLine = null;
+                                }
+                                Toast.makeText(this, "Ride declined successfully.", Toast.LENGTH_SHORT).show();
+                                resetDriverState();
+                            })
+                            .addOnFailureListener(e -> {
+                                Toast.makeText(this, "Failed to remove ride data after decline: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            });
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Failed to decline ride: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    // Helper to calculate distance between two locations
+    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                        Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return EARTH_RADIUS_KM * c; // Distance in kilometers
+    }
+
+
+
+
+    private void resetDriverState() {
+        isPickupComplete = false;
+        mPickup.setEnabled(true);
+        mComplete.setEnabled(false);
+
+        // Clear the route line from the map
+        if (routeLine != null) {
+            routeLine.remove();
+            routeLine = null;
+        }
+
+        // Clear all markers and polylines from the map
+        if (mMap != null) {
+            mMap.clear();
+        }
+
+        // Reset customer-related state
+        customerPickupLocation = null;
+        customerDestinationLocation = null;
+        customerLatLng = null;
+        destinationLatLng = null;
+
+        Toast.makeText(this, "Ready for the next ride.", Toast.LENGTH_SHORT).show();
+    }
+
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        mMap = googleMap;
+
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            buildGoogleApiClient();
+            mMap.setMyLocationEnabled(true);
+        }
+    }
+
+    protected synchronized void buildGoogleApiClient() {
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
+        mGoogleApiClient.connect();
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        mLastLocation = location;
+
+        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+        mMap.animateCamera(CameraUpdateFactory.zoomTo(20));
+
+        saveDriverLocation(location);
+
+        if (!isPickupComplete) {
+            if (customerLatLng != null) { // Only draw if customerLatLng is set
+                drawRoute(customerLatLng);
+            }
+        } else {
+            if (destinationLatLng != null) { // Only draw if destinationLatLng is set
+                drawRoute(destinationLatLng);
+            }
+        }
+    }
+
     private void saveDriverLocation(Location location) {
         String driverId = FirebaseAuth.getInstance().getUid();
 
@@ -289,81 +609,6 @@ public class DriverMapActivity extends FragmentActivity implements
                     .addOnFailureListener(e -> {
                         // Handle failure
                     });
-        }
-    }
-
-    private void markPickupComplete() {
-        isPickupComplete = true;
-        mPickup.setEnabled(false);
-        mComplete.setEnabled(true);
-
-        drawRoute(destinationLatLng); // Draw route to destination
-        Toast.makeText(this, "Pickup complete. Driving to destination.", Toast.LENGTH_SHORT).show();
-    }
-
-    private void completeRide() {
-        String driverId = FirebaseAuth.getInstance().getUid();
-
-        if (driverId != null) {
-            db.collection("driversworking").document(driverId).delete()
-                    .addOnSuccessListener(aVoid -> {
-                        Toast.makeText(this, "Ride completed.", Toast.LENGTH_SHORT).show();
-                        resetDriverState();
-                    })
-                    .addOnFailureListener(e -> Toast.makeText(this, "Failed to complete ride: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-        }
-    }
-
-    private void resetDriverState() {
-        isPickupComplete = false;
-        mPickup.setEnabled(true);
-        mComplete.setEnabled(false);
-
-        if (routeLine != null) {
-            routeLine.remove();
-        }
-
-        customerPickupLocation = null;
-        customerDestinationLocation = null;
-        customerLatLng = null;
-        destinationLatLng = null;
-
-        Toast.makeText(this, "Ready for next ride.", Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
-
-        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            buildGoogleApiClient();
-            mMap.setMyLocationEnabled(true);
-        }
-    }
-
-    protected synchronized void buildGoogleApiClient() {
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
-        mGoogleApiClient.connect();
-    }
-
-    @Override
-    public void onLocationChanged(Location location) {
-        mLastLocation = location;
-
-        LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-        mMap.animateCamera(CameraUpdateFactory.zoomTo(15));
-
-        saveDriverLocation(location);
-
-        if (!isPickupComplete) {
-            drawRoute(customerLatLng);
-        } else {
-            drawRoute(destinationLatLng);
         }
     }
 

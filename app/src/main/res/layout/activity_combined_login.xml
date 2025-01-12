@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="16dp"
+    android:background="@drawable/gradient_background">
+
+    <!-- Logo -->
+
+    <!-- Email Field -->
+
+    <ImageView
+        android:id="@+id/appLogo"
+        android:layout_width="wrap_content"
+        android:layout_height="266dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="50dp"
+        android:contentDescription="App Logo"
+        android:src="@drawable/taxilogo" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="50dp"
+        android:background="@drawable/rounded_edit_text"
+        android:padding="8dp">
+
+        <ImageView
+            android:id="@+id/emailIcon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/emaillogo"
+            android:contentDescription="Email Icon" />
+
+        <EditText
+            android:id="@+id/email"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Email"
+            android:inputType="textEmailAddress"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:background="@android:color/transparent" />
+    </LinearLayout>
+
+    <!-- Password Field -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/rounded_edit_text"
+        android:padding="8dp">
+
+        <ImageView
+            android:id="@+id/passwordIcon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/locklogo"
+            android:contentDescription="Password Icon" />
+
+        <EditText
+            android:id="@+id/password"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Password"
+            android:inputType="textPassword"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:background="@android:color/transparent" />
+    </LinearLayout>
+
+    <!-- Driver and Customer Login Buttons (Side by Side) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="16dp"
+        android:weightSum="2"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btnDriverLogin"
+            android:layout_width="0dp"
+            android:layout_height="95dp"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:backgroundTint="@color/colorPrimary"
+            android:drawableStart="@drawable/driverlogo"
+            android:drawablePadding="8dp"
+            android:text="Driver Login"
+            android:textColor="@android:color/white" />
+
+        <Button
+            android:id="@+id/btnCustomerLogin"
+            android:layout_width="0dp"
+            android:layout_height="95dp"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:backgroundTint="@color/colorPrimary"
+            android:drawableStart="@drawable/userlogo"
+            android:drawablePadding="8dp"
+            android:text="Customer Login"
+            android:textColor="@android:color/white" />
+    </LinearLayout>
+
+    <!-- Register Button -->
+
+    <Button
+        android:id="@+id/btnRegDriver"
+        android:layout_width="137dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="-100dp"
+        android:layout_marginTop="16dp"
+        android:backgroundTint="@color/colorAccent"
+        android:text="Register as Driver"
+        android:textColor="@android:color/white" />
+
+    <Button
+        android:id="@+id/btnRegCustomer"
+        android:layout_width="137dp"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="100dp"
+        android:layout_marginTop="-55dp"
+        android:backgroundTint="@color/colorAccent"
+        android:text="Register as Customer"
+        android:textColor="@android:color/white" />
+
+</LinearLayout>

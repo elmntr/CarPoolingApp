@@ -1,0 +1,47 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:gravity="center"
+    android:background="@drawable/gradient_background">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="How to Use RealTaxi"
+        android:fontFamily="@font/jersey15_regular"
+        android:textColor="@color/colorPrimary"
+        android:textSize="24sp"
+        android:background="@drawable/embossed_text_shadow"
+        android:padding="8dp"
+        android:layout_marginBottom="16dp"
+        android:gravity="center" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="1. Open the app and log in or sign up."
+        android:fontFamily="@font/jersey15_regular"
+        android:textColor="@color/colorBackgroundDark"
+        android:textSize="16sp"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="2. Select whether you're a driver or customer."
+        android:fontFamily="@font/jersey15_regular"
+        android:textColor="@color/colorBackgroundDark"
+        android:textSize="16sp"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="3. Start your journey safely and conveniently!"
+        android:fontFamily="@font/jersey15_regular"
+        android:textColor="@color/colorBackgroundDark"
+        android:textSize="16sp" />
+</LinearLayout>

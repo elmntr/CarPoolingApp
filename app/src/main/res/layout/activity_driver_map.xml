@@ -8,37 +8,80 @@
     tools:context=".DriverMapActivity">
 
     <!-- Map Fragment -->
+
+    <!-- Logout Button -->
+
     <fragment
         android:id="@+id/map"
         android:name="com.google.android.gms.maps.SupportMapFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Logout Button -->
     <Button
         android:id="@+id/btnLogout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:backgroundTint="@color/colorPrimary"
+        android:textColor="@android:color/white"
         android:text="Logout"
         android:layout_margin="16dp"
         android:layout_gravity="top|start" />
 
-    <!-- Pickup Button -->
-    <Button
-        android:id="@+id/btnPickup"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Pickup"
-        android:layout_gravity="center_horizontal|bottom"
-        android:layout_marginBottom="90dp" />
 
-    <!-- Complete Ride Button -->
-    <Button
-        android:id="@+id/btnComplete"
-        android:layout_width="wrap_content"
+
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Complete Ride"
-        android:layout_gravity="center_horizontal|bottom"
-        android:layout_marginBottom="30dp" />
+        android:orientation="vertical"
+        android:layout_gravity="bottom"
+        android:padding="16dp"
+        android:background="@drawable/gradient_background">
+
+        <Button
+            android:id="@+id/btnDecline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/colorPrimary"
+            android:textColor="@android:color/white"
+            android:text="Decline"
+            android:layout_gravity="bottom"
+            />
+
+        <!-- Pickup Button -->
+        <Button
+            android:id="@+id/btnPickup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:backgroundTint="@color/colorPrimary"
+            android:textColor="@android:color/white"
+            android:text="Pickup"
+            android:layout_gravity="bottom"
+            android:layout_marginLeft="120dp"
+            android:layout_marginTop="-48dp"
+            />
+
+        <!-- Complete Ride Button -->
+        <Button
+            android:id="@+id/btnComplete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="228dp"
+            android:layout_marginTop="-48dp"
+            android:backgroundTint="#808080"
+            android:text="Complete Ride"
+            android:textColor="@android:color/white" />
+
+        <Button
+            android:id="@+id/btnRideDetails"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+
+            android:backgroundTint="@color/colorPrimary"
+            android:text="Ride Details"
+            android:textColor="@android:color/white" />
+
+    </LinearLayout>
+
+
 
 </FrameLayout>

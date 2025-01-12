@@ -1,0 +1,63 @@
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/gradient_background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:gravity="center">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Meet the Team"
+            android:fontFamily="@font/jersey15_regular"
+            android:textColor="@color/colorPrimary"
+            android:textSize="24sp"
+            android:background="@drawable/embossed_text_shadow"
+            android:padding="8dp"
+            android:layout_marginBottom="16dp"
+            android:gravity="center" />
+
+        <!-- Team Members -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Justin Puyong - Lead Developer"
+            android:fontFamily="@font/jersey15_regular"
+            android:textColor="@color/colorBackgroundDark"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="John Lawrence Amihan - UI Designer"
+            android:fontFamily="@font/jersey15_regular"
+            android:textColor="@color/colorBackgroundDark"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Aldwin Santos - UI Designer"
+            android:fontFamily="@font/jersey15_regular"
+            android:textColor="@color/colorBackgroundDark"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Felix Andrei Marvilla - QA Engineer"
+            android:fontFamily="@font/jersey15_regular"
+            android:textColor="@color/colorBackgroundDark"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp" />
+    </LinearLayout>
+</ScrollView>

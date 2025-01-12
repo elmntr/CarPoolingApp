@@ -1,0 +1,14 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape>
+            <corners android:radius="8dp" />
+            <solid android:color="#80000000" /> <!-- Shadow color -->
+        </shape>
+    </item>
+    <item android:top="2dp" android:left="2dp">
+        <shape>
+            <corners android:radius="8dp" />
+            <solid android:color="#FFFFFF" /> <!-- Text base color -->
+        </shape>
+    </item>
+</layer-list>
