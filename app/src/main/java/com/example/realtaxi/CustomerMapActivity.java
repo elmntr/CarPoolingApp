@@ -59,7 +59,7 @@ public class CustomerMapActivity extends FragmentActivity implements
     private GeoPoint pickupLocation;
     private GeoPoint destination;
 
-    private Button mLogout, mRequest,mCancel,mRideDetails,mNav,mNav2;
+    private Button mLogout, mRequest,mRideDetails,mNav;
     private EditText mDestination;
     private ActivityCustomerMapBinding binding;
 
@@ -81,13 +81,11 @@ public class CustomerMapActivity extends FragmentActivity implements
         mLogout = findViewById(R.id.btnLogout);
         mRequest = findViewById(R.id.btnRequest);
         mDestination = findViewById(R.id.editDestination);
-        mCancel = findViewById(R.id.btnCancel); // New Cancel button
         mRideDetails = findViewById(R.id.btnRideDetails);
         mNav = findViewById(R.id.btnMapInteract);
-        mNav2 = findViewById(R.id.btnMapInteract2);
         mRideDetails.setOnClickListener(view -> showRideDetails());
 
-        mCancel.setOnClickListener(view -> cancelRequest());
+
 
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, LOCATION_REQUEST_CODE);
@@ -101,9 +99,7 @@ public class CustomerMapActivity extends FragmentActivity implements
             navigateToMain();
         });
 
-        mNav2.setOnClickListener(view -> {
-            enableFollowMode();
-        });
+
         mNav.setOnClickListener(view -> {
            setupMapListeners();
         });
@@ -114,7 +110,7 @@ public class CustomerMapActivity extends FragmentActivity implements
                 if (destination != null) {
                     placeRequest(destination);
                     searchForDriver();
-                    mCancel.setVisibility(View.VISIBLE); // Show the Cancel button after placing a request
+
                 } else {
                     String destinationAddress = mDestination.getText().toString().trim();
                     if (destinationAddress.isEmpty()) {
@@ -122,7 +118,7 @@ public class CustomerMapActivity extends FragmentActivity implements
                         return;
                     }
                     geocodeDestination(destinationAddress);
-                    mCancel.setVisibility(View.VISIBLE); // Show the Cancel button after placing a request
+
                 }
             }
         });
@@ -201,43 +197,8 @@ public class CustomerMapActivity extends FragmentActivity implements
     }
 
 
-    // Cancel the request
-    private void cancelRequest() {
-        String customerId = FirebaseAuth.getInstance().getUid();
 
-        if (customerId == null) {
-            Toast.makeText(this, "Authentication error. Please log in again.", Toast.LENGTH_SHORT).show();
-            return;
-        }
 
-        // Remove the request from customerRequests
-        db.collection("customerRequests")
-                .document(customerId)
-                .delete()
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(this, "Request canceled successfully.", Toast.LENGTH_SHORT).show();
-                    // Hide the Cancel button
-
-                    // Clear markers from the map
-                    if (mMap != null) {
-                        mMap.clear();
-                    }
-                    // Reset destination
-                    destination = null;
-                })
-                .addOnFailureListener(e -> Toast.makeText(this, "Failed to cancel request: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-
-        // Remove the request from driversworking if it exists
-        db.collection("driversworking")
-                .whereEqualTo("customerId", customerId)
-                .get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    for (DocumentSnapshot doc : queryDocumentSnapshots) {
-                        doc.getReference().delete();
-                    }
-                })
-                .addOnFailureListener(e -> Toast.makeText(this, "Failed to remove working request: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-    }
 
     private void navigateToMain() {
         startActivity(new Intent(CustomerMapActivity.this, LoginActivity.class));
@@ -394,7 +355,10 @@ public class CustomerMapActivity extends FragmentActivity implements
                     // Handle ride status updates
                     switch (status) {
                         case "PENDING":
-                            Toast.makeText(this, "You have a driver assigned. They will arrive shortly!", Toast.LENGTH_SHORT).show();
+                            if (!isPickedUpToastShown) {
+                                Toast.makeText(this, "You have a driver assigned. They will arrive shortly!", Toast.LENGTH_SHORT).show();
+                                isPickedUpToastShown = true;
+                            }
                             break;
 
                         case "PICKED_UP":
@@ -410,7 +374,7 @@ public class CustomerMapActivity extends FragmentActivity implements
                                 mMap.clear(); // Clear the map
                             }
                             driverMarker = null; // Reset the driver marker reference
-                            isPickedUpToastShown = false; // Reset flag for next ride
+                            isPickedUpToastShown = true; // Reset flag for next ride
                             break;
 
                         case "DECLINED":
@@ -419,7 +383,7 @@ public class CustomerMapActivity extends FragmentActivity implements
                                 mMap.clear(); // Clear any driver-related markers
                             }
                             driverMarker = null; // Reset the driver marker reference
-                            isPickedUpToastShown = false; // Reset flag for next ride
+                            isPickedUpToastShown = true; // Reset flag for next ride
                             break;
                     }
                 });
@@ -568,15 +532,7 @@ public class CustomerMapActivity extends FragmentActivity implements
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
 
         // Update user's location marker or indicator without moving the camera
-               if (mUserMarker == null) {
-            // Add a marker for the user's location if it doesn't exist
-            mUserMarker = mMap.addMarker(new MarkerOptions()
-                    .position(latLng)
-                    .title("You are here"));
-        } else {
-            // Update the marker position
-            mUserMarker.setPosition(latLng);
-        }
+
 
         // Move the camera only if in follow mode
         if (isFollowingUser) {

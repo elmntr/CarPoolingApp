@@ -3,12 +3,23 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="@drawable/gradient_background">
+
+    <ImageView
+        android:id="@+id/appLogo3"
+        android:layout_width="match_parent"
+        android:layout_height="266dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="5dp"
+        android:contentDescription="App Logo"
+        android:src="@drawable/taxilogo" />
 
     <EditText
         android:id="@+id/fullName"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
         android:hint="Full Name"
         android:inputType="textPersonName" />
 
@@ -16,6 +27,7 @@
         android:id="@+id/phoneNumber"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
         android:hint="Phone Number"
         android:inputType="phone" />
 
@@ -23,6 +35,7 @@
         android:id="@+id/address"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
         android:hint="Address"
         android:inputType="textPostalAddress" />
 
@@ -30,6 +43,7 @@
         android:id="@+id/email"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
         android:hint="Email"
         android:inputType="textEmailAddress" />
 
@@ -37,6 +51,7 @@
         android:id="@+id/password"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
         android:hint="Password"
         android:inputType="textPassword" />
 
@@ -44,6 +59,8 @@
         android:id="@+id/btnRegister"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:backgroundTint="@color/colorPrimary"
         android:text="Register" />
 
 </LinearLayout>
