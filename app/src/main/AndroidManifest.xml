@@ -38,7 +38,7 @@
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyAkLMRwpyJu110ymDM3wMprwr4-lbU7KtU" />
+            android:value="Enter Key here" />
 
         <activity
             android:name=".DriverMapActivity"

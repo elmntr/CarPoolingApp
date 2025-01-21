@@ -304,7 +304,7 @@ public class DriverMapActivity extends FragmentActivity implements
         String url = "https://api.mapbox.com/directions/v5/mapbox/driving/" +
                 origin.longitude + "," + origin.latitude + ";" +
                 destination.longitude + "," + destination.latitude +
-                "?geometries=polyline&access_token=sk.eyJ1IjoiZWxtbnRyeHh4IiwiYSI6ImNtNWI1Z3p0azUwMTcyaXA3OG8xMzFsOTkifQ.o21ekzUd3BZR2uS85IRZ2w";
+                "?geometries=polyline&access_token=enter your mapbox api key";
 
         OkHttpClient client = new OkHttpClient();
 
